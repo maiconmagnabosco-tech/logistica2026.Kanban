@@ -1,7 +1,7 @@
 // API_URL será obtida do main.js se disponível, senão usa esta
 const API_URL = typeof window !== 'undefined' && window.KANBAN_API_URL 
     ? window.KANBAN_API_URL 
-    : 'https://script.google.com/macros/s/AKfycbzups-xiV57iFmlV1OYzi3Fp6_qOtZ3DOl1sJPp38dwMGsHjioNIF3UIiE_PI-vKUVu/exec';
+    : 'https://script.google.com/macros/s/AKfycbylY8f__8tujbaY-MwnknDvSSMQwTPgq5xWet0veq4Q0jS5HfYJu0HPmj9AxwBpoVzl/exec';
 
 class DashboardApp {
     constructor() {

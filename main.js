@@ -1,5 +1,5 @@
 // API_URL será obtida do main.js se disponível, senão usa esta
-const API_URL = 'https://script.google.com/macros/s/AKfycbzups-xiV57iFmlV1OYzi3Fp6_qOtZ3DOl1sJPp38dwMGsHjioNIF3UIiE_PI-vKUVu/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbylY8f__8tujbaY-MwnknDvSSMQwTPgq5xWet0veq4Q0jS5HfYJu0HPmj9AxwBpoVzl/exec';
 // Disponibilizar API_URL globalmente para outros scripts
 if (typeof window !== 'undefined') {
     window.KANBAN_API_URL = API_URL;
