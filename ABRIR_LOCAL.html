@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Logistica - Acesso Local</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 40px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #111;
+            padding: 40px;
+            border-radius: 12px;
+            border: 1px solid #333;
+        }
+        h1 {
+            color: #22d3ee;
+            margin-bottom: 30px;
+        }
+        .link-box {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border: 1px solid #333;
+        }
+        a {
+            color: #38bdf8;
+            text-decoration: none;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        a:hover {
+            color: #22d3ee;
+            text-decoration: underline;
+        }
+        .instructions {
+            margin-top: 30px;
+            padding: 20px;
+            background: #0a0a0a;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        .instructions h3 {
+            color: #fff;
+            margin-top: 0;
+        }
+        code {
+            background: #000;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #22d3ee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Kanban Logistica | MAGNABOSCO</h1>
+        
+        <div class="link-box">
+            <p>🔗 <strong>Link Local:</strong></p>
+            <a href="login.html" id="localLink">Abrir Tela de Login</a>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instruções de Acesso Local:</h3>
+            <p><strong>Opção 1 - Abrir diretamente:</strong></p>
+            <p>Clique no link acima ou abra o arquivo <code>login.html</code> diretamente no navegador.</p>
+            
+            <p><strong>Opção 2 - Usar servidor HTTP (recomendado):</strong></p>
+            <p>Se você tiver Python instalado, abra o terminal neste diretório e execute:</p>
+            <code>python -m http.server 8000</code>
+            <p>Depois acesse: <code>http://localhost:8000/login.html</code></p>
+            
+            <p><strong>Opção 3 - Usar Node.js:</strong></p>
+            <p>Se você tiver Node.js instalado, execute:</p>
+            <code>npx http-server -p 8000</code>
+            <p>Depois acesse: <code>http://localhost:8000/login.html</code></p>
+        </div>
+    </div>
+
+    <script>
+        // Atualizar o link com o caminho completo do arquivo
+        const currentPath = window.location.pathname;
+        const basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+        document.getElementById('localLink').href = basePath + 'login.html';
+        
+        // Exibir caminho completo
+        console.log('Caminho do arquivo:', window.location.href);
+        console.log('Arquivo de login:', basePath + 'login.html');
+    </script>
+</body>
+</html>
+
+
+
+
+
+
+
+

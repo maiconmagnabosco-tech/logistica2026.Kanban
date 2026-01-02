@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Kanban Logistica</title>
+    <link rel="stylesheet" href="./style.css?v=20250203">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <!-- Authentication Check -->
+    <script>
+        (function() {
+            if (window.location.pathname.includes('login.html')) {
+                return;
+            }
+            const isAuthenticated = localStorage.getItem('kanban_auth') === 'true';
+            if (!isAuthenticated) {
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
+
+    <style>
+        .dashboard-page {
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+        }
+
+        .date-filter {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: var(--panel-bg);
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            border: 1px solid #333;
+        }
+
+        .date-filter label {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .date-filter input {
+            background: #050505;
+            border: 1px solid #333;
+            padding: 0.6rem;
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            cursor: pointer;
+        }
+
+        .date-filter input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #1f1f1f;
+            min-height: 400px;
+        }
+
+        .chart-card h3 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .chart-card canvas {
+            max-height: 350px;
+        }
+
+        .rankings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .ranking-card {
+            background: var(--panel-bg);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid #1f1f1f;
+        }
+
+        .ranking-card h3 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1.2rem;
+        }
+
+        .ranking-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .ranking-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .ranking-item strong {
+            color: var(--text-primary);
+        }
+
+        .ranking-item span {
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        .btn-back {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid #333;
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+        }
+
+        .btn-back:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .dashboard-cards {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-cards .dash-card {
+            background: #111;
+            padding: 1.2rem;
+            border-radius: 12px;
+            flex: 1;
+            border: 1px solid #222;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+
+        .dashboard-cards .dash-label {
+            font-size: 0.9rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        .dashboard-cards .dash-value {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #fff;
+            margin-top: 0.5rem;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-page">
+        <div class="dashboard-header">
+            <h1>Dashboard | <span style="color: #22d3ee; font-weight: 700;">MAGNABOSCO</span></h1>
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <a href="index.html" class="btn-back">
+                    <ion-icon name="arrow-back-outline"></ion-icon>
+                    Voltar ao Kanban
+                </a>
+            </div>
+        </div>
+
+        <div class="dashboard-cards" id="dashboard-cards">
+            <div class="dash-card">
+                <span class="dash-label">Projetos Totais</span>
+                <span class="dash-value" id="stat-total">0</span>
+            </div>
+            <div class="dash-card">
+                <span class="dash-label">Concluídos (100%)</span>
+                <span class="dash-value" id="stat-completed">0</span>
+            </div>
+            <div class="dash-card">
+                <span class="dash-label">Aderência de Conclusão</span>
+                <span class="dash-value" id="stat-adherence">0%</span>
+            </div>
+        </div>
+
+        <div class="date-filter">
+            <label>Data Início:</label>
+            <input type="date" id="date-start">
+            <label>Data Fim:</label>
+            <input type="date" id="date-end">
+            <button class="btn-pri" onclick="window.dashboardApp?.filterByDate()">Filtrar</button>
+            <button class="btn-sec" onclick="window.dashboardApp?.clearFilters()" style="margin-left: 0.5rem;">Limpar Filtros</button>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Projetos Totais por Setor</h3>
+                <canvas id="chart-projects-sector"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Tarefas Concluídas por Responsável</h3>
+                <canvas id="chart-completed-responsible"></canvas>
+            </div>
+        </div>
+
+        <div class="charts-grid">
+            <div class="chart-card">
+                <h3>Tarefas por Criticidade/Prioridade</h3>
+                <canvas id="chart-priority-line"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Tarefas Concluídas × Projetos Finalizados por Mês</h3>
+                <canvas id="chart-responsibles-bar"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="./dashboard.js?v=20250203"></script>
+</body>
+
+</html>
+
+
+
+
+
+
+
+

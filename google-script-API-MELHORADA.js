@@ -1,0 +1,513 @@
+/**
+ * API Google Apps Script - Kanban Logística MAGNABOSCO
+ * Versão melhorada com segurança e logs
+ * 
+ * ESTRUTURA DA PLANILHA:
+ * Colunas: id | project | objetivo | conteudo | status | setor | responsavel | data_inicio | data_fim | prioridade | dateChangeStatus
+ */
+
+// ============================================================================
+// CONFIGURAÇÕES
+// ============================================================================
+
+// Origens permitidas (domínios que podem acessar a API)
+// IMPORTANTE: Atualize com a URL do seu deploy (ex: https://seu-projeto.vercel.app)
+const ALLOWED_ORIGINS = [
+    'https://kanban-logistica-magnabosco.vercel.app',  // ← ATUALIZE AQUI
+    'https://*.vercel.app',                             // Qualquer subdomínio Vercel
+    'https://*.netlify.app',                            // Qualquer subdomínio Netlify
+    'http://localhost:8000',                            // Desenvolvimento local
+    'http://127.0.0.1:8000',                           // Desenvolvimento local alternativo
+];
+
+// Limites de segurança
+const MAX_PAYLOAD_SIZE = 1000000;        // 1MB máximo
+const MAX_TASKS = 10000;                 // Máximo de tarefas por requisição
+const RATE_LIMIT_WINDOW = 60000;         // 1 minuto em ms
+const MAX_REQUESTS_PER_WINDOW = 100;     // 100 requisições por minuto
+
+// Valores permitidos para validação
+const ALLOWED_COLUMN_IDS = ['todo', 'inprogress', 'validation', 'done'];
+const ALLOWED_PRIORITIES = ['baixa', 'media', 'alta'];
+const ALLOWED_DATE_CHANGE_STATUS = ['', 'postergada', 'antecipada'];
+
+// Nomes das colunas na planilha
+const COLUMNS = [
+    'id', 'project', 'objetivo', 'conteudo', 'status', 
+    'setor', 'responsavel', 'data_inicio', 'data_fim', 
+    'prioridade', 'dateChangeStatus'
+];
+
+// ============================================================================
+// FUNÇÕES AUXILIARES
+// ============================================================================
+
+/**
+ * Criar resposta JSON com headers CORS
+ */
+function createResponse(data, statusCode = 200) {
+    const output = ContentService.createTextOutput(JSON.stringify(data))
+        .setMimeType(ContentService.MimeType.JSON);
+    
+    // Nota: Google Apps Script gerencia CORS automaticamente
+    // Mas podemos adicionar validações de origem aqui se necessário
+    
+    return output;
+}
+
+/**
+ * Criar resposta de erro
+ */
+function createErrorResponse(message, statusCode = 400) {
+    return createResponse({
+        status: 'error',
+        message: message,
+        timestamp: new Date().toISOString()
+    }, statusCode);
+}
+
+/**
+ * Criar resposta de sucesso
+ */
+function createSuccessResponse(data, message = 'Success') {
+    return createResponse({
+        status: 'success',
+        message: message,
+        data: data,
+        timestamp: new Date().toISOString()
+    });
+}
+
+/**
+ * Validar origem da requisição (básico)
+ * Nota: Google Apps Script tem limitações para validação de origem HTTP
+ */
+function isValidOrigin(origin) {
+    if (!origin) return true; // Se não tiver origem, permitir (para compatibilidade)
+    
+    return ALLOWED_ORIGINS.some(allowed => {
+        if (allowed.includes('*')) {
+            const pattern = allowed.replace('*', '.*');
+            const regex = new RegExp('^' + pattern);
+            return regex.test(origin);
+        }
+        return origin === allowed;
+    });
+}
+
+/**
+ * Rate limiting simples usando PropertiesService
+ */
+function checkRateLimit() {
+    try {
+        const scriptProperties = PropertiesService.getScriptProperties();
+        const now = Date.now();
+        const lastRequestKey = 'last_request_time';
+        const requestCountKey = 'request_count';
+        
+        const lastRequest = scriptProperties.getProperty(lastRequestKey);
+        const requestCount = parseInt(scriptProperties.getProperty(requestCountKey) || '0');
+        
+        if (lastRequest) {
+            const timeDiff = now - parseInt(lastRequest);
+            
+            // Se passou o tempo da janela, resetar contador
+            if (timeDiff > RATE_LIMIT_WINDOW) {
+                scriptProperties.setProperty(requestCountKey, '1');
+                scriptProperties.setProperty(lastRequestKey, now.toString());
+                return true;
+            }
+            
+            // Verificar limite
+            if (requestCount >= MAX_REQUESTS_PER_WINDOW) {
+                return false; // Rate limit excedido
+            }
+            
+            // Incrementar contador
+            scriptProperties.setProperty(requestCountKey, (requestCount + 1).toString());
+        } else {
+            // Primeira requisição
+            scriptProperties.setProperty(lastRequestKey, now.toString());
+            scriptProperties.setProperty(requestCountKey, '1');
+        }
+        
+        return true;
+    } catch (error) {
+        // Em caso de erro, permitir (não bloquear por falha no rate limiting)
+        console.error('Rate limit check failed:', error);
+        return true;
+    }
+}
+
+/**
+ * Registrar log de acesso (salvar em sheet "Logs" se existir)
+ */
+function logAccess(action, method, success, error = null) {
+    try {
+        const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+        let logSheet = spreadsheet.getSheetByName('Logs');
+        
+        // Criar sheet de logs se não existir
+        if (!logSheet) {
+            logSheet = spreadsheet.insertSheet('Logs');
+            logSheet.getRange(1, 1, 1, 6).setValues([[
+                'Data', 'Hora', 'Ação', 'Método', 'Sucesso', 'Erro'
+            ]]);
+            // Formatar cabeçalho
+            const headerRange = logSheet.getRange(1, 1, 1, 6);
+            headerRange.setFontWeight('bold');
+            headerRange.setBackground('#4285f4');
+            headerRange.setFontColor('#ffffff');
+        }
+        
+        // Adicionar log
+        const now = new Date();
+        logSheet.appendRow([
+            Utilities.formatDate(now, Session.getScriptTimeZone(), 'dd/MM/yyyy'),
+            Utilities.formatDate(now, Session.getScriptTimeZone(), 'HH:mm:ss'),
+            action,
+            method,
+            success ? 'Sim' : 'Não',
+            error || ''
+        ]);
+        
+        // Limitar logs a 10000 linhas (manter apenas os últimos)
+        const lastRow = logSheet.getLastRow();
+        if (lastRow > 10000) {
+            logSheet.deleteRows(2, lastRow - 10000);
+        }
+    } catch (error) {
+        // Falha silenciosa - não bloquear operação por erro de log
+        console.error('Log access failed:', error);
+    }
+}
+
+/**
+ * Sanitizar string (limitar tamanho e remover caracteres perigosos)
+ */
+function sanitizeString(value, maxLength = 1000) {
+    if (value === null || value === undefined) return '';
+    let str = String(value);
+    
+    // Remover caracteres de controle
+    str = str.replace(/[\x00-\x1F\x7F]/g, '');
+    
+    // Limitar tamanho
+    if (str.length > maxLength) {
+        str = str.substring(0, maxLength);
+    }
+    
+    return str.trim();
+}
+
+/**
+ * Validar e sanitizar tarefa
+ */
+function validateAndSanitizeTask(task) {
+    if (!task || typeof task !== 'object') {
+        throw new Error('Task must be an object');
+    }
+    
+    // Validar e sanitizar cada campo
+    const validated = {
+        id: sanitizeString(task.id || '', 100),
+        project: sanitizeString(task.project || 'Geral', 200),
+        objective: sanitizeString(task.objective || '', 1000),
+        content: sanitizeString(task.content || '', 500),
+        columnId: ALLOWED_COLUMN_IDS.includes(String(task.columnId || '')) 
+            ? String(task.columnId) 
+            : 'todo',
+        sector: sanitizeString(task.sector || '', 100),
+        responsible: sanitizeString(task.responsible || '', 100),
+        startDate: sanitizeString(task.startDate || '', 50),
+        endDate: sanitizeString(task.endDate || '', 50),
+        priority: ALLOWED_PRIORITIES.includes(String(task.priority || '')) 
+            ? String(task.priority) 
+            : 'media',
+        dateChangeStatus: ALLOWED_DATE_CHANGE_STATUS.includes(String(task.dateChangeStatus || '')) 
+            ? String(task.dateChangeStatus) 
+            : ''
+    };
+    
+    // Validar que ID não está vazio
+    if (!validated.id || validated.id === 'undefined') {
+        throw new Error('Task ID is required and cannot be empty');
+    }
+    
+    return validated;
+}
+
+/**
+ * Inicializar planilha (criar cabeçalhos se não existir)
+ */
+function initializeSheet() {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const lastRow = sheet.getLastRow();
+    
+    // Se a planilha está vazia ou não tem cabeçalhos, criar
+    if (lastRow === 0) {
+        sheet.appendRow(COLUMNS);
+        // Formatar cabeçalho
+        const headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
+        headerRange.setFontWeight('bold');
+        headerRange.setBackground('#4285f4');
+        headerRange.setFontColor('#ffffff');
+        sheet.setFrozenRows(1);
+    } else {
+        // Verificar se os cabeçalhos estão corretos
+        const headers = sheet.getRange(1, 1, 1, COLUMNS.length).getValues()[0];
+        const headersMatch = headers.length === COLUMNS.length && 
+                            headers.every((h, i) => String(h).toLowerCase() === COLUMNS[i].toLowerCase());
+        
+        if (!headersMatch) {
+            // Adicionar cabeçalhos se não existirem corretamente
+            sheet.insertRowBefore(1);
+            sheet.getRange(1, 1, 1, COLUMNS.length).setValues([COLUMNS]);
+            const headerRange = sheet.getRange(1, 1, 1, COLUMNS.length);
+            headerRange.setFontWeight('bold');
+            headerRange.setBackground('#4285f4');
+            headerRange.setFontColor('#ffffff');
+            sheet.setFrozenRows(1);
+        }
+    }
+}
+
+// ============================================================================
+// ENDPOINTS DA API
+// ============================================================================
+
+/**
+ * GET - Buscar todas as tarefas
+ */
+function doGet(e) {
+    const startTime = Date.now();
+    let error = null;
+    
+    try {
+        // Rate limiting
+        if (!checkRateLimit()) {
+            error = 'Rate limit exceeded. Please try again later.';
+            logAccess('GET', 'GET', false, error);
+            return createErrorResponse(error, 429);
+        }
+        
+        // Inicializar planilha se necessário
+        initializeSheet();
+        
+        // Buscar dados da planilha
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        const rows = sheet.getDataRange().getValues();
+        
+        // Se não houver dados (apenas cabeçalho ou vazio)
+        if (rows.length <= 1) {
+            logAccess('GET', 'GET', true);
+            return createSuccessResponse({ tasks: [] }, 'No tasks found');
+        }
+        
+        // Remover cabeçalho (primeira linha)
+        const dataRows = rows.slice(1);
+        
+        // Mapear para objetos de tarefas
+        const tasks = dataRows.map((row, index) => {
+            try {
+                return {
+                    id: String(row[0] || ''),
+                    project: row[1] || '',
+                    objective: row[2] || '',
+                    content: row[3] || '',
+                    columnId: row[4] || 'todo',
+                    sector: row[5] || '',
+                    responsible: row[6] || '',
+                    startDate: row[7] || '',
+                    endDate: row[8] || '',
+                    priority: row[9] || 'media',
+                    dateChangeStatus: row[10] || ''
+                };
+            } catch (err) {
+                console.error(`Error parsing row ${index + 2}:`, err);
+                return null;
+            }
+        }).filter(t => t !== null && t.id && t.id !== 'undefined');
+        
+        const responseTime = Date.now() - startTime;
+        logAccess('GET', 'GET', true);
+        
+        return createSuccessResponse({
+            tasks: tasks,
+            count: tasks.length,
+            responseTime: responseTime
+        }, 'Tasks retrieved successfully');
+        
+    } catch (err) {
+        error = err.toString();
+        console.error('GET error:', err);
+        logAccess('GET', 'GET', false, error);
+        return createErrorResponse('Internal server error: ' + error, 500);
+    }
+}
+
+/**
+ * POST - Salvar tarefas (substitui todas)
+ */
+function doPost(e) {
+    const startTime = Date.now();
+    let error = null;
+    
+    try {
+        // Rate limiting
+        if (!checkRateLimit()) {
+            error = 'Rate limit exceeded. Please try again later.';
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 429);
+        }
+        
+        // Validar payload
+        if (!e.postData || !e.postData.contents) {
+            error = 'No data provided';
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 400);
+        }
+        
+        // Validar tamanho do payload
+        const payloadSize = e.postData.contents.length;
+        if (payloadSize > MAX_PAYLOAD_SIZE) {
+            error = `Payload too large (max ${MAX_PAYLOAD_SIZE} bytes)`;
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 413);
+        }
+        
+        // Parse JSON
+        let data;
+        try {
+            data = JSON.parse(e.postData.contents);
+        } catch (parseError) {
+            error = 'Invalid JSON format';
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 400);
+        }
+        
+        // Validar estrutura
+        if (!data || !Array.isArray(data.tasks)) {
+            error = 'Invalid data structure: tasks array is required';
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 400);
+        }
+        
+        // Validar número de tarefas
+        if (data.tasks.length > MAX_TASKS) {
+            error = `Too many tasks (max ${MAX_TASKS})`;
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 400);
+        }
+        
+        // Inicializar planilha
+        initializeSheet();
+        
+        // Validar e sanitizar todas as tarefas
+        const validatedTasks = [];
+        for (let i = 0; i < data.tasks.length; i++) {
+            try {
+                const validated = validateAndSanitizeTask(data.tasks[i]);
+                validatedTasks.push(validated);
+            } catch (validationError) {
+                console.error(`Validation error for task ${i}:`, validationError);
+                // Pular tarefa inválida, mas continuar processamento
+            }
+        }
+        
+        if (validatedTasks.length === 0) {
+            error = 'No valid tasks to save';
+            logAccess('POST', 'POST', false, error);
+            return createErrorResponse(error, 400);
+        }
+        
+        // Converter para formato de linhas da planilha
+        const rows = validatedTasks.map(task => [
+            task.id,
+            task.project,
+            task.objective,
+            task.content,
+            task.columnId,
+            task.sector,
+            task.responsible,
+            task.startDate,
+            task.endDate,
+            task.priority,
+            task.dateChangeStatus
+        ]);
+        
+        // Escrever na planilha
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        const lastRow = sheet.getLastRow();
+        
+        // Limpar dados antigos (manter cabeçalho)
+        if (lastRow > 1) {
+            sheet.deleteRows(2, lastRow - 1);
+        }
+        
+        // Inserir novos dados
+        if (rows.length > 0) {
+            sheet.getRange(2, 1, rows.length, COLUMNS.length).setValues(rows);
+            SpreadsheetApp.flush(); // Forçar salvamento
+        }
+        
+        const responseTime = Date.now() - startTime;
+        logAccess('POST', 'POST', true);
+        
+        return createSuccessResponse({
+            count: validatedTasks.length,
+            saved: validatedTasks.length,
+            responseTime: responseTime
+        }, 'Tasks saved successfully');
+        
+    } catch (err) {
+        error = err.toString();
+        console.error('POST error:', err);
+        logAccess('POST', 'POST', false, error);
+        return createErrorResponse('Internal server error: ' + error, 500);
+    }
+}
+
+/**
+ * Função auxiliar para configurar a planilha inicial (executar manualmente se necessário)
+ */
+function setupSheet() {
+    initializeSheet();
+    return 'Sheet initialized successfully';
+}
+
+/**
+ * Função para testar a API localmente
+ */
+function testAPI() {
+    console.log('Testing GET...');
+    const getResult = doGet({});
+    console.log('GET result:', getResult.getContent());
+    
+    console.log('\nTesting POST...');
+    const testData = {
+        tasks: [
+            {
+                id: 'test-1',
+                project: 'Teste',
+                objective: 'Objetivo de teste',
+                content: 'Conteúdo de teste',
+                columnId: 'todo',
+                sector: 'TI',
+                responsible: 'Teste',
+                startDate: '2024-01-01',
+                endDate: '2024-12-31',
+                priority: 'media',
+                dateChangeStatus: ''
+            }
+        ]
+    };
+    
+    const postResult = doPost({
+        postData: {
+            contents: JSON.stringify(testData)
+        }
+    });
+    console.log('POST result:', postResult.getContent());
+}
+

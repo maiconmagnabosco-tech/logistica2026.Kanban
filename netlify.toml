@@ -1,0 +1,18 @@
+# Configuração do Netlify para evitar cache de arquivos JS/CSS/HTML
+# Isso força o navegador a sempre buscar versões atualizadas
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+

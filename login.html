@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Kanban Logística</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #121212;
+            --surface-color: rgba(18, 18, 18, 0.95);
+            --primary-color: #00f0ff;
+            --secondary-color: #7c3aed;
+            --accent-color: #f59e0b;
+            --text-color: #e2e8f0;
+            --neon-cyan: #00f0ff;
+            --neon-purple: #a855f7;
+            --neon-orange: #f59e0b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000000;
+            color: var(--text-color);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Background com imagem de transportes */
+        .login-background {
+            position: absolute;
+            inset: 0;
+            background-image: 
+                linear-gradient(135deg, rgba(0, 0, 0, 0.9) 0%, rgba(10, 10, 30, 0.8) 50%, rgba(0, 0, 0, 0.9) 100%),
+                url('https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?w=1920&q=80&auto=format&fit=crop'),
+                url('https://images.unsplash.com/photo-1486262715619-67b85e0b08d3?w=1920&q=80&auto=format&fit=crop');
+            background-size: 100% 100%, cover, cover;
+            background-position: center, center, center;
+            background-repeat: no-repeat, no-repeat, no-repeat;
+            background-blend-mode: normal, overlay, normal;
+            filter: brightness(0.35) contrast(1.3) saturate(1.2);
+            z-index: 0;
+            animation: backgroundShift 25s ease-in-out infinite alternate;
+        }
+        
+        /* Fallback caso as imagens não carreguem */
+        .login-background::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(ellipse at top, rgba(0, 240, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
+                linear-gradient(135deg, #0a0a0a 0%, #1a0a2e 50%, #0a0a0a 100%);
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0% {
+                background-position: center center, center center, center center;
+                filter: brightness(0.3) contrast(1.2) saturate(1.1) hue-rotate(0deg);
+            }
+            50% {
+                filter: brightness(0.4) contrast(1.4) saturate(1.3) hue-rotate(10deg);
+            }
+            100% {
+                background-position: center center, 50% 60%, 50% 40%;
+                filter: brightness(0.35) contrast(1.3) saturate(1.2) hue-rotate(-10deg);
+            }
+        }
+
+        /* Overlay com gradiente futurista */
+        .login-background::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.2) 0%, transparent 60%),
+                radial-gradient(circle at 80% 80%, rgba(0, 240, 255, 0.2) 0%, transparent 60%),
+                radial-gradient(circle at 50% 20%, rgba(245, 158, 11, 0.15) 0%, transparent 60%),
+                linear-gradient(135deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+            z-index: 1;
+        }
+
+        /* Grade futurista animada */
+        .grid-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridMove 20s linear infinite;
+            pointer-events: none;
+        }
+
+        @keyframes gridMove {
+            0% {
+                transform: translate(0, 0);
+            }
+            100% {
+                transform: translate(50px, 50px);
+            }
+        }
+
+        /* Linhas de conexão futuristas */
+        .tech-lines {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+
+        .tech-line {
+            position: absolute;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            height: 1px;
+            animation: lineScan 3s linear infinite;
+        }
+
+        .tech-line:nth-child(1) {
+            top: 20%;
+            left: 0;
+            width: 100%;
+            animation-delay: 0s;
+        }
+
+        .tech-line:nth-child(2) {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            animation-delay: 1s;
+            background: linear-gradient(90deg, transparent, var(--neon-purple), transparent);
+        }
+
+        .tech-line:nth-child(3) {
+            top: 80%;
+            left: 0;
+            width: 100%;
+            animation-delay: 2s;
+        }
+
+        @keyframes lineScan {
+            0% {
+                opacity: 0;
+                transform: translateX(-100%);
+            }
+            50% {
+                opacity: 0.6;
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+        }
+
+        /* Partículas flutuantes */
+        .particles {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: var(--neon-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            animation: particleFloat 8s ease-in-out infinite;
+        }
+
+        .particle:nth-child(odd) {
+            background: var(--neon-purple);
+            box-shadow: 0 0 10px var(--neon-purple), 0 0 20px var(--neon-purple);
+        }
+
+        .particle:nth-child(3n) {
+            background: var(--neon-orange);
+            box-shadow: 0 0 10px var(--neon-orange), 0 0 20px var(--neon-orange);
+        }
+
+        @keyframes particleFloat {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+                opacity: 0.4;
+            }
+            50% {
+                transform: translate(100px, -100px) scale(1.5);
+                opacity: 0.8;
+            }
+        }
+
+        /* Caixas de entregas flutuando com efeito futurista */
+        .floating-boxes {
+            position: absolute;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .floating-box {
+            position: absolute;
+            font-size: 3.5rem;
+            opacity: 0.25;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));
+            animation: floatFuturistic 8s ease-in-out infinite;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
+        }
+
+        .floating-box:nth-child(1) {
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+            filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+        }
+
+        .floating-box:nth-child(2) {
+            top: 20%;
+            right: 15%;
+            animation-delay: 1.5s;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
+        }
+
+        .floating-box:nth-child(3) {
+            bottom: 20%;
+            left: 20%;
+            animation-delay: 3s;
+            filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
+        }
+
+        .floating-box:nth-child(4) {
+            bottom: 15%;
+            right: 10%;
+            animation-delay: 4.5s;
+            filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.5));
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+        }
+
+        .floating-box:nth-child(5) {
+            top: 50%;
+            left: 5%;
+            animation-delay: 6s;
+            filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.5));
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.8);
+        }
+
+        .floating-box:nth-child(6) {
+            top: 60%;
+            right: 5%;
+            animation-delay: 7.5s;
+            filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+            text-shadow: 0 0 20px rgba(245, 158, 11, 0.8);
+        }
+
+        @keyframes floatFuturistic {
+            0%, 100% {
+                transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+                opacity: 0.2;
+            }
+            25% {
+                transform: translateY(-40px) translateX(20px) rotate(5deg) scale(1.1);
+                opacity: 0.35;
+            }
+            50% {
+                transform: translateY(-60px) translateX(0px) rotate(-5deg) scale(1.2);
+                opacity: 0.3;
+            }
+            75% {
+                transform: translateY(-40px) translateX(-20px) rotate(5deg) scale(1.1);
+                opacity: 0.35;
+            }
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 10;
+            background: linear-gradient(145deg, rgba(10, 10, 30, 0.85) 0%, rgba(20, 10, 40, 0.9) 100%);
+            backdrop-filter: blur(40px) saturate(200%);
+            padding: 3rem 2.5rem;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 
+                0 25px 80px rgba(0, 0, 0, 0.8),
+                0 0 0 1px rgba(0, 240, 255, 0.2),
+                0 0 60px rgba(0, 240, 255, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            text-align: center;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+            animation: slideIn 0.7s cubic-bezier(0.16, 1, 0.3, 1), cardGlow 3s ease-in-out infinite;
+        }
+
+        /* Borda neon animada */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 24px;
+            padding: 2px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple), var(--neon-orange), var(--neon-cyan));
+            background-size: 300% 300%;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            animation: borderRotate 4s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes borderRotate {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        @keyframes cardGlow {
+            0%, 100% {
+                box-shadow: 
+                    0 25px 80px rgba(0, 0, 0, 0.8),
+                    0 0 0 1px rgba(0, 240, 255, 0.2),
+                    0 0 60px rgba(0, 240, 255, 0.15);
+            }
+            50% {
+                box-shadow: 
+                    0 25px 80px rgba(0, 0, 0, 0.8),
+                    0 0 0 1px rgba(0, 240, 255, 0.4),
+                    0 0 80px rgba(0, 240, 255, 0.25),
+                    0 0 120px rgba(168, 85, 247, 0.15);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+
+        h2 {
+            margin-bottom: 2rem;
+            font-family: 'Poppins', sans-serif;
+            font-weight: 700;
+            font-size: 2.2rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #ffffff 0%, var(--neon-cyan) 50%, var(--neon-purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1.3;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
+            animation: textGlow 3s ease-in-out infinite;
+            position: relative;
+        }
+
+        @keyframes textGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.3));
+            }
+            50% {
+                filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.6));
+            }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+            text-align: left;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.7);
+            letter-spacing: 0.2px;
+        }
+
+        input {
+            width: 100%;
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(0, 240, 255, 0.2);
+            border-radius: 12px;
+            color: #ffffff;
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            font-weight: 400;
+            box-sizing: border-box;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            outline: none;
+            position: relative;
+        }
+
+        input:focus {
+            border-color: var(--neon-cyan);
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 
+                0 0 0 4px rgba(0, 240, 255, 0.2),
+                0 0 20px rgba(0, 240, 255, 0.3),
+                inset 0 0 20px rgba(0, 240, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        input::placeholder {
+            color: rgba(0, 240, 255, 0.4);
+            font-weight: 400;
+        }
+
+        button {
+            width: 100%;
+            padding: 1.2rem 2rem;
+            background: linear-gradient(135deg, var(--neon-cyan) 0%, var(--neon-purple) 100%);
+            color: #000000;
+            border: none;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin-top: 1.5rem;
+            box-shadow: 
+                0 8px 24px rgba(0, 240, 255, 0.4),
+                0 0 40px rgba(0, 240, 255, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transition: left 0.6s;
+        }
+
+        button:hover {
+            background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-cyan) 100%);
+            transform: translateY(-3px);
+            box-shadow: 
+                0 12px 40px rgba(0, 240, 255, 0.5),
+                0 0 60px rgba(168, 85, 247, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.4);
+        }
+
+        button:hover::before {
+            left: 100%;
+        }
+
+        button:active {
+            transform: translateY(-1px);
+            box-shadow: 
+                0 6px 20px rgba(0, 240, 255, 0.4),
+                0 0 30px rgba(0, 240, 255, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .error-msg {
+            color: #f87171;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-top: 1rem;
+            display: none;
+            min-height: 1.2rem;
+            padding: 0.75rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            border-radius: 12px;
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .logo {
+            filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+            transition: all 0.3s;
+            animation: logoGlow 3s ease-in-out infinite;
+        }
+
+        .logo:hover {
+            transform: scale(1.08);
+            filter: drop-shadow(0 0 30px rgba(0, 240, 255, 0.8)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+        }
+
+        @keyframes logoGlow {
+            0%, 100% {
+                filter: drop-shadow(0 0 20px rgba(0, 240, 255, 0.5)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+            }
+            50% {
+                filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.6)) drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5));
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="login-background"></div>
+    <div class="grid-overlay"></div>
+    <div class="tech-lines">
+        <div class="tech-line"></div>
+        <div class="tech-line"></div>
+        <div class="tech-line"></div>
+    </div>
+    <div class="particles">
+        <div class="particle" style="left: 10%; top: 20%; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 30%; top: 60%; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 70%; top: 30%; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 80%; top: 70%; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 50%; top: 10%; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 20%; top: 80%; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 90%; top: 50%; animation-delay: 6s;"></div>
+        <div class="particle" style="left: 40%; top: 40%; animation-delay: 7s;"></div>
+    </div>
+    <div class="floating-boxes">
+        <div class="floating-box">📦</div>
+        <div class="floating-box">📦</div>
+        <div class="floating-box">📦</div>
+        <div class="floating-box">📦</div>
+        <div class="floating-box">📦</div>
+        <div class="floating-box">📦</div>
+    </div>
+
+    <div class="login-card">
+        <img src="./logo.png" alt="Logo" class="logo" style="width: 120px; margin-bottom: 1.5rem;" onerror="this.style.display='none'">
+        <h2>Kanban Logística<br><span style="background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">MAGNABOSCO</span></h2>
+
+        <form id="login-form">
+            <div class="form-group">
+                <input type="text" id="email" placeholder="E-mail (@transmagnabosco.com.br) ou usuário (ex: Magnabosco)" required autocomplete="username">
+            </div>
+            <div class="form-group">
+                <input type="password" id="password" placeholder="Senha" required autocomplete="current-password">
+            </div>
+            <button type="submit">Entrar</button>
+        </form>
+        <p class="error-msg" id="error-msg"></p>
+    </div>
+
+    <script src="./auth-config.js"></script>
+    <script>
+        // Verificar se já está autenticado - evitar loop
+        (function() {
+            const isAuthenticated = localStorage.getItem('kanban_auth') === 'true';
+            if (isAuthenticated && !window.location.pathname.includes('login.html')) {
+                window.location.replace('index.html');
+            }
+        })();
+
+        // Função para validar email ou login
+        function validateEmail(email) {
+            const emailLower = email.toLowerCase().trim();
+            
+            // Verificar se é o usuário fictício "magnabosco" (sem necessidade de domínio)
+            if (emailLower === 'magnabosco') {
+                return { valid: true, message: '' };
+            }
+            
+            // Para outros usuários, verificar domínio
+            if (!emailLower.endsWith(AUTH_DOMAIN)) {
+                return { valid: false, message: `E-mail deve ser do domínio ${AUTH_DOMAIN}` };
+            }
+            // Verificar se o email está na lista de usuários permitidos
+            if (!USER_PERMISSIONS[emailLower]) {
+                return { valid: false, message: 'E-mail não autorizado. Entre em contato com o administrador.' };
+            }
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailLower)) {
+                return { valid: false, message: 'Formato de e-mail inválido' };
+            }
+            return { valid: true, message: '' };
+        }
+
+        // Função para mostrar erro
+        function showError(message) {
+            const errorEl = document.getElementById('error-msg');
+            if (message) {
+                errorEl.textContent = message;
+                errorEl.classList.add('show');
+            } else {
+                errorEl.textContent = '';
+                errorEl.classList.remove('show');
+            }
+        }
+
+        // Lógica de Login
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showError('');
+
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const submitButton = e.target.querySelector('button[type="submit"]');
+
+            // Validar email
+            const emailValidation = validateEmail(email);
+            if (!emailValidation.valid) {
+                showError(emailValidation.message);
+                return;
+            }
+
+            // Validar senha do usuário específico
+            if (!validateUserPassword(email, password)) {
+                showError('Senha incorreta');
+                return;
+            }
+
+            // Mostrar loading
+            submitButton.disabled = true;
+            submitButton.textContent = 'Entrando...';
+
+            // Simular delay de autenticação
+            setTimeout(() => {
+                // Salvar autenticação
+                const loginLower = email.toLowerCase().trim();
+                localStorage.setItem('kanban_auth', 'true');
+                localStorage.setItem('kanban_user', loginLower);
+                
+                // Extrair nome do usuário
+                const userInfo = USER_PERMISSIONS[loginLower];
+                const userName = userInfo?.name || (loginLower.includes('@') ? loginLower.split('@')[0].split('.')[0] : loginLower);
+                localStorage.setItem('kanban_user_name', userName);
+
+                // Redirecionar
+                window.location.href = 'index.html';
+            }, 800);
+        });
+
+
+        // Limpar erro ao digitar
+        document.querySelectorAll('input').forEach(input => {
+            input.addEventListener('input', () => {
+                showError('');
+            });
+        });
+    </script>
+</body>
+
+</html>

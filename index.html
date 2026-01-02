@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kanban Logistica</title>
+    <link rel="stylesheet" href="./style.css?v=20250203">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <!-- jsPDF para gerar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="./auth-config.js?v=20250203"></script>
+
+    <!-- Authentication Check -->
+    <script>
+        // Check authentication before loading the app
+        (function() {
+            // Prevent redirect loop - check if we're already on login page
+            if (window.location.pathname.includes('login.html')) {
+                return;
+            }
+            
+            const isAuthenticated = localStorage.getItem('kanban_auth') === 'true';
+            if (!isAuthenticated) {
+                window.location.replace('login.html');
+            } else {
+                const userPerms = getUserPermissions();
+                if (userPerms && userPerms.access === 'view_only' && !window.location.pathname.includes('dashboard.html')) {
+                    // Se for view_only, pode ver o kanban mas com restrições
+                }
+            }
+        })();
+    </script>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Menu Lateral -->
+        <aside class="sidebar" id="sidebar">
+            <button id="mobile-close-sidebar" class="mobile-close-btn" aria-label="Fechar menu">
+                <ion-icon name="close-outline"></ion-icon>
+            </button>
+            <div class="sidebar-header">
+                <div class="user-info-container">
+                    <label for="user-photo-upload" class="user-photo-label" title="Clique para alterar foto">
+                        <img id="user-photo" src="" alt="Foto do usuário" class="user-photo">
+                        <input type="file" id="user-photo-upload" accept="image/*" style="display: none;">
+                    </label>
+                    <span id="user-info" class="user-info"></span>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3>Filtros</h3>
+                    <div class="sidebar-filters">
+                        <div class="sidebar-filter-group">
+                            <label>Projeto</label>
+                            <select id="sidebar-project-selector" class="sidebar-selector">
+                                <option value="" selected>Todos os Projetos</option>
+                            </select>
+                        </div>
+                        <div class="sidebar-filter-group">
+                            <label>Setor</label>
+                            <select id="sidebar-sector-selector" class="sidebar-selector">
+                                <option value="" selected>Todos os Setores</option>
+                            </select>
+                        </div>
+                        <div class="sidebar-filter-group">
+                            <label>Responsável</label>
+                            <select id="sidebar-responsible-selector" class="sidebar-selector">
+                                <option value="" selected>Todos os Responsáveis</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-buttons">
+                        <button id="sidebar-btn-new-project" class="sidebar-btn sidebar-btn-primary">
+                            <ion-icon name="add-circle-outline"></ion-icon>
+                            Novo Projeto
+                        </button>
+                        <button id="sidebar-btn-dashboard" class="sidebar-btn sidebar-btn-primary">
+                            <ion-icon name="stats-chart-outline"></ion-icon>
+                            Dashboard
+                        </button>
+                        <button id="sidebar-btn-schedule" class="sidebar-btn sidebar-btn-primary">
+                            <ion-icon name="calendar-outline"></ion-icon>
+                            Cronograma
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button id="sidebar-btn-logout" class="sidebar-btn sidebar-btn-danger">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    Sair do Sistema
+                </button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <div class="main-wrapper">
+            <!-- Dashboard & Controls -->
+            <header class="header">
+                <div class="top-bar">
+                    <button id="mobile-menu-toggle" class="mobile-menu-btn" aria-label="Abrir menu">
+                        <ion-icon name="menu-outline"></ion-icon>
+                    </button>
+                    <h1>Kanban Logistica | <span style="color: #22d3ee; font-weight: 700;">MAGNABOSCO</span></h1>
+                </div>
+            </header>
+
+            <!-- Kanban Board -->
+            <div class="board" id="board">
+                <!-- Columns injected by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 id="modal-title">Nova Tarefa</h2>
+            <input type="hidden" id="inp-id"> <!-- Hidden ID for edits -->
+
+            <div class="form-group">
+                <label>Projeto</label>
+                <input type="text" id="inp-project" placeholder="Ex: Entrega SP" list="project-list">
+                <datalist id="project-list"></datalist>
+            </div>
+            <div class="form-group">
+                <label>Objetivo</label>
+                <textarea id="inp-objective" placeholder="Descreva o objetivo do projeto" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Tarefa</label>
+                <div id="tasks-container">
+                    <div class="dynamic-field">
+                        <input type="text" class="inp-task" placeholder="Descrição da atividade">
+                        <button type="button" class="btn-remove-field" style="display: none;">✕</button>
+                    </div>
+                </div>
+                <button type="button" id="btn-add-task" class="btn-add-field" title="Adicionar tarefa (máx. 10)">
+                    <span>+</span> Adicionar Tarefa
+                </button>
+            </div>
+            <div class="form-group row">
+                <div>
+                    <label>Setor</label>
+                    <div id="sectors-container">
+                        <div class="dynamic-field">
+                            <input type="text" class="inp-sector" placeholder="Ex: Frota">
+                            <button type="button" class="btn-remove-field" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" id="btn-add-sector" class="btn-add-field" title="Adicionar setor (máx. 10)">
+                        <span>+</span> Adicionar Setor
+                    </button>
+                </div>
+                <div>
+                    <label>Responsável</label>
+                    <div id="responsibles-container">
+                        <div class="dynamic-field">
+                            <input type="text" class="inp-responsible" placeholder="Nome">
+                            <button type="button" class="btn-remove-field" style="display: none;">✕</button>
+                        </div>
+                    </div>
+                    <button type="button" id="btn-add-responsible" class="btn-add-field" title="Adicionar responsável (máx. 10)">
+                        <span>+</span> Adicionar Responsável
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Prioridade</label>
+                <select id="inp-priority">
+                    <option value="baixa">Baixa</option>
+                    <option value="media" selected>Média</option>
+                    <option value="alta">Alta</option>
+                </select>
+            </div>
+            <div class="form-group row">
+                <div>
+                    <label>Data Início</label>
+                    <input type="date" id="inp-start">
+                </div>
+                <div>
+                    <label>Data Fim</label>
+                    <input type="date" id="inp-end">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button id="btn-cancel" class="btn-sec">Cancelar</button>
+                <button id="btn-save" class="btn-pri">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="./main.js?v=20250203"></script>
+</body>
+
+</html>

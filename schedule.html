@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma - Kanban Logística</title>
+    <link rel="stylesheet" href="./style.css?v=20250203">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Ionicons -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <!-- jsPDF para gerar PDFs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="./auth-config.js?v=20250203"></script>
+
+    <!-- Authentication Check -->
+    <script>
+        (function() {
+            if (window.location.pathname.includes('login.html')) {
+                return;
+            }
+            const isAuthenticated = localStorage.getItem('kanban_auth') === 'true';
+            if (!isAuthenticated) {
+                window.location.replace('login.html');
+            }
+        })();
+    </script>
+</head>
+<body>
+    <div id="app">
+        <!-- Menu Lateral -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="user-info-container">
+                    <label for="user-photo-upload" class="user-photo-label" title="Clique para alterar foto">
+                        <img id="user-photo" src="" alt="Foto do usuário" class="user-photo">
+                        <input type="file" id="user-photo-upload" accept="image/*" style="display: none;">
+                    </label>
+                    <span id="user-info" class="user-info"></span>
+                </div>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <h3>Navegação</h3>
+                    <div class="sidebar-buttons">
+                        <button id="sidebar-btn-kanban" class="sidebar-btn sidebar-btn-primary">
+                            <ion-icon name="grid-outline"></ion-icon>
+                            Kanban
+                        </button>
+                        <button id="sidebar-btn-dashboard" class="sidebar-btn sidebar-btn-primary">
+                            <ion-icon name="stats-chart-outline"></ion-icon>
+                            Dashboard
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <button id="sidebar-btn-logout" class="sidebar-btn sidebar-btn-danger">
+                    <ion-icon name="log-out-outline"></ion-icon>
+                    Sair do Sistema
+                </button>
+            </div>
+        </aside>
+
+        <!-- Conteúdo Principal -->
+        <div class="main-wrapper">
+            <div class="header" style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1>Cronograma</h1>
+                    <p class="subtitle">Visualize as datas de entrega dos projetos e gerencie reuniões, folgas e plantões.</p>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <!-- Filtro de datas para folgas -->
+                    <div class="folgas-filter" style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="date" id="folgas-filter-start" class="folgas-filter-input" placeholder="Data início">
+                        <span style="color: var(--text-secondary);">até</span>
+                        <input type="date" id="folgas-filter-end" class="folgas-filter-input" placeholder="Data fim">
+                    </div>
+                    <!-- Botão de imprimir PDF de folgas -->
+                    <button id="btn-print-folgas-pdf" class="btn-pri" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <ion-icon name="print-outline"></ion-icon>
+                        Imprimir Folgas PDF
+                    </button>
+                </div>
+            </div>
+            <!-- Alerta do dia de hoje no canto superior direito -->
+            <div id="today-alert" class="today-alert" style="display: none;"></div>
+
+            <!-- Calendário -->
+            <div class="schedule-container">
+                <div class="calendar-header">
+                    <button id="btn-prev-month" class="calendar-nav-btn">
+                        <ion-icon name="chevron-back-outline"></ion-icon>
+                    </button>
+                    <h2 id="calendar-month-year"></h2>
+                    <button id="btn-next-month" class="calendar-nav-btn">
+                        <ion-icon name="chevron-forward-outline"></ion-icon>
+                    </button>
+                </div>
+
+                <div class="calendar-grid" id="calendar-grid"></div>
+
+                <div class="calendar-legend">
+                    <div class="legend-item">
+                        <div class="legend-color purple-day"></div>
+                        <span>Dia com projeto previsto para entrega (mostra tarefa, setor e responsável)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color meeting-day"></div>
+                        <span>Dia com reunião agendada (mostra nome e horário)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Reunião -->
+            <div id="meeting-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content schedule-modal">
+                    <div class="modal-header">
+                        <h2>Agendar Reunião</h2>
+                        <button class="modal-close" id="meeting-modal-close">
+                            <ion-icon name="close-outline"></ion-icon>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Data da Reunião</label>
+                            <input type="date" id="meeting-date" class="form-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Horário</label>
+                            <input type="time" id="meeting-time" class="form-input" value="09:00">
+                        </div>
+                        <div class="form-group">
+                            <label>Título da Reunião</label>
+                            <input type="text" id="meeting-title" class="form-input" placeholder="Ex: Reunião de Planejamento" value="Reunião">
+                        </div>
+                        <div class="modal-actions">
+                            <button id="btn-cancel-meeting" class="btn-sec">Cancelar</button>
+                            <button id="btn-save-meeting" class="btn-pri">Agendar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Anotações da Reunião -->
+            <div id="notes-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content notes-modal">
+                    <div class="modal-header">
+                        <h2>Ata da Reunião</h2>
+                        <div class="modal-header-actions">
+                            <button id="btn-print-pdf" class="btn-icon" title="Imprimir PDF">
+                                <ion-icon name="print-outline"></ion-icon>
+                            </button>
+                            <button class="modal-close" id="notes-modal-close">
+                                <ion-icon name="close-outline"></ion-icon>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Data da Reunião</label>
+                            <input type="text" id="notes-meeting-date" class="form-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Anotações</label>
+                            <textarea id="notes-content" class="form-textarea" rows="15" placeholder="Digite as anotações da reunião aqui..."></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="btn-save-notes" class="btn-pri">Salvar Anotações</button>
+                            <button id="btn-close-notes" class="btn-sec">Fechar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Evento -->
+            <div id="event-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content schedule-modal">
+                    <div class="modal-header">
+                        <h2>Criar Evento</h2>
+                        <button class="modal-close" id="event-modal-close">
+                            <ion-icon name="close-outline"></ion-icon>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Data do Evento</label>
+                            <input type="date" id="event-date" class="form-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome do Evento</label>
+                            <input type="text" id="event-name" class="form-input" placeholder="Ex: Workshop de Treinamento">
+                        </div>
+                        <div class="form-group">
+                            <label>Data de Fim (opcional)</label>
+                            <input type="date" id="event-end-date" class="form-input">
+                        </div>
+                        <div class="modal-actions">
+                            <button id="btn-cancel-event" class="btn-sec">Cancelar</button>
+                            <button id="btn-save-event" class="btn-pri">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal de Plantão -->
+            <div id="plantao-modal" class="modal-overlay" style="display: none;">
+                <div class="modal-content schedule-modal">
+                    <div class="modal-header">
+                        <h2>Agendar Plantão</h2>
+                        <button class="modal-close" id="plantao-modal-close">
+                            <ion-icon name="close-outline"></ion-icon>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Data de Início do Plantão</label>
+                            <input type="date" id="plantao-start-date" class="form-input" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Nome da Pessoa</label>
+                            <input type="text" id="plantao-person" class="form-input" placeholder="Ex: João Silva">
+                        </div>
+                        <div class="form-group">
+                            <label>Data de Fim (sempre será domingo)</label>
+                            <input type="date" id="plantao-end-date" class="form-input">
+                        </div>
+                        <div class="form-help-text">
+                            <small>⚠️ O plantão sempre termina no domingo. No próximo sábado será criado automaticamente um evento de folga.</small>
+                        </div>
+                        <div class="modal-actions">
+                            <button id="btn-cancel-plantao" class="btn-sec">Cancelar</button>
+                            <button id="btn-save-plantao" class="btn-pri">Salvar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="./schedule.js?v=20250203"></script>
+</body>
+</html>
+
