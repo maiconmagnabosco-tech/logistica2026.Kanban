@@ -4,22 +4,6 @@
     "outputDirectory": ".",
     "rewrites": [
         {
-            "source": "/login.html",
-            "destination": "/login.html"
-        },
-        {
-            "source": "/dashboard.html",
-            "destination": "/dashboard.html"
-        },
-        {
-            "source": "/schedule.html",
-            "destination": "/schedule.html"
-        },
-        {
-            "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-            "destination": "/$1"
-        },
-        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
