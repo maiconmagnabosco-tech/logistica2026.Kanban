@@ -243,39 +243,19 @@ class ScheduleApp {
         try {
             console.log('Salvando reuniões na API:', Object.keys(this.meetings).length, 'reuniões');
             
-            // Carregar todos os dados do cronograma primeiro (com retry)
-            let cronogramaData = { meetings: {}, events: {}, plantoes: {} };
-            let getResponse;
+            // IMPORTANTE: Usar APENAS dados locais atuais para garantir que exclusões sejam salvas
+            // Não carregar da API primeiro, pois pode ter dados desatualizados
+            const cronogramaData = {
+                meetings: { ...this.meetings }, // Usar dados locais atuais (inclui exclusões)
+                events: { ...this.events }, // Usar dados locais atuais
+                plantoes: { ...this.plantoes } // Usar dados locais atuais
+            };
             
-            try {
-                getResponse = await fetch(`${API_URL}?action=cronograma`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                if (getResponse.ok) {
-                    const getData = await getResponse.json();
-                    if (getData.status === 'success' && getData.data) {
-                        cronogramaData = getData.data;
-                        console.log('Dados carregados da API:', {
-                            meetings: Object.keys(cronogramaData.meetings || {}).length,
-                            events: Object.keys(cronogramaData.events || {}).length,
-                            plantoes: Object.keys(cronogramaData.plantoes || {}).length
-                        });
-                    }
-                } else {
-                    console.warn('Erro ao carregar dados, usando dados locais:', getResponse.status);
-                }
-            } catch (getError) {
-                console.warn('Erro ao carregar dados antes de salvar, continuando com dados locais:', getError);
-            }
-            
-            // IMPORTANTE: Substituir completamente as reuniões pelas locais (não fazer merge)
-            // Isso garante que exclusões sejam salvas corretamente
-            cronogramaData.meetings = { ...this.meetings }; // Cópia das reuniões locais
-            // Preservar eventos e plantões existentes (se não estiverem sendo salvos agora)
-            cronogramaData.events = cronogramaData.events || this.events || {};
-            cronogramaData.plantoes = cronogramaData.plantoes || this.plantoes || {};
+            console.log('Dados a serem salvos (apenas locais):', {
+                meetings: Object.keys(cronogramaData.meetings).length,
+                events: Object.keys(cronogramaData.events).length,
+                plantoes: Object.keys(cronogramaData.plantoes).length
+            });
             
             // Usar no-cors (funciona mesmo com "Qualquer pessoa" - não requer autenticação)
             // Com no-cors, não conseguimos ver a resposta, mas assumimos sucesso se não houver erro
@@ -398,38 +378,19 @@ class ScheduleApp {
         try {
             console.log('Salvando eventos na API:', Object.keys(this.events).length, 'eventos');
             
-            // Carregar todos os dados do cronograma primeiro (com retry)
-            let cronogramaData = { meetings: {}, events: {}, plantoes: {} };
+            // IMPORTANTE: Usar APENAS dados locais atuais para garantir que exclusões sejam salvas
+            // Não carregar da API primeiro, pois pode ter dados desatualizados
+            const cronogramaData = {
+                meetings: { ...this.meetings }, // Usar dados locais atuais
+                events: { ...this.events }, // Usar dados locais atuais (inclui exclusões)
+                plantoes: { ...this.plantoes } // Usar dados locais atuais
+            };
             
-            try {
-                const getResponse = await fetch(`${API_URL}?action=cronograma`, {
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                
-                if (getResponse.ok) {
-                    const getData = await getResponse.json();
-                    if (getData.status === 'success' && getData.data) {
-                        cronogramaData = getData.data;
-                        console.log('Dados carregados da API:', {
-                            meetings: Object.keys(cronogramaData.meetings || {}).length,
-                            events: Object.keys(cronogramaData.events || {}).length,
-                            plantoes: Object.keys(cronogramaData.plantoes || {}).length
-                        });
-                    }
-                } else {
-                    console.warn('Erro ao carregar dados, usando dados locais:', getResponse.status);
-                }
-            } catch (getError) {
-                console.warn('Erro ao carregar dados antes de salvar, continuando com dados locais:', getError);
-            }
-            
-            // IMPORTANTE: Substituir completamente os eventos pelos locais (não fazer merge)
-            // Isso garante que exclusões sejam salvas corretamente
-            cronogramaData.events = { ...this.events }; // Cópia dos eventos locais
-            // Preservar reuniões e plantões existentes (se não estiverem sendo salvos agora)
-            cronogramaData.meetings = cronogramaData.meetings || this.meetings || {};
-            cronogramaData.plantoes = cronogramaData.plantoes || this.plantoes || {};
+            console.log('Dados a serem salvos (apenas locais):', {
+                meetings: Object.keys(cronogramaData.meetings).length,
+                events: Object.keys(cronogramaData.events).length,
+                plantoes: Object.keys(cronogramaData.plantoes).length
+            });
             
             // Usar no-cors (funciona mesmo com "Qualquer pessoa" - não requer autenticação)
             // Com no-cors, não conseguimos ver a resposta, mas assumimos sucesso se não houver erro
@@ -547,40 +508,19 @@ class ScheduleApp {
             console.log('Salvando plantões na API:', Object.keys(this.plantoes).length, 'plantões');
             console.log('URL da API:', API_URL);
             
-            // Carregar todos os dados do cronograma primeiro (com retry)
-            let cronogramaData = { meetings: {}, events: {}, plantoes: {} };
+            // IMPORTANTE: Usar APENAS dados locais atuais para garantir que exclusões sejam salvas
+            // Não carregar da API primeiro, pois pode ter dados desatualizados
+            const cronogramaData = {
+                meetings: { ...this.meetings }, // Usar dados locais atuais
+                events: { ...this.events }, // Usar dados locais atuais
+                plantoes: { ...this.plantoes } // Usar dados locais atuais (inclui exclusões)
+            };
             
-            try {
-                // Tentar com CORS primeiro
-                const getResponse = await fetch(`${API_URL}?action=cronograma&t=${Date.now()}`, {
-                    method: 'GET',
-                    mode: 'cors',
-                    cache: 'no-cache'
-                });
-                
-                if (getResponse.ok) {
-                    const getData = await getResponse.json();
-                    if (getData.status === 'success' && getData.data) {
-                        cronogramaData = getData.data;
-                        console.log('Dados carregados da API:', {
-                            meetings: Object.keys(cronogramaData.meetings || {}).length,
-                            events: Object.keys(cronogramaData.events || {}).length,
-                            plantoes: Object.keys(cronogramaData.plantoes || {}).length
-                        });
-                    }
-                } else {
-                    console.warn('Erro ao carregar dados, usando dados locais:', getResponse.status);
-                }
-            } catch (getError) {
-                console.warn('Erro ao carregar dados antes de salvar, continuando com dados locais:', getError);
-            }
-            
-            // IMPORTANTE: Substituir completamente os plantões pelos locais (não fazer merge)
-            // Isso garante que exclusões sejam salvas corretamente
-            cronogramaData.plantoes = { ...this.plantoes }; // Cópia dos plantões locais
-            // Preservar reuniões e eventos existentes (se não estiverem sendo salvos agora)
-            cronogramaData.meetings = cronogramaData.meetings || this.meetings || {};
-            cronogramaData.events = cronogramaData.events || this.events || {};
+            console.log('Dados a serem salvos (apenas locais):', {
+                meetings: Object.keys(cronogramaData.meetings).length,
+                events: Object.keys(cronogramaData.events).length,
+                plantoes: Object.keys(cronogramaData.plantoes).length
+            });
             
             console.log('Dados a serem salvos:', {
                 meetings: Object.keys(cronogramaData.meetings || {}).length,
