@@ -2,30 +2,26 @@
     "version": 2,
     "buildCommand": null,
     "outputDirectory": ".",
-    "routes": [
+    "rewrites": [
         {
-            "src": "/login.html",
-            "dest": "/login.html"
+            "source": "/login.html",
+            "destination": "/login.html"
         },
         {
-            "src": "/dashboard.html",
-            "dest": "/dashboard.html"
+            "source": "/dashboard.html",
+            "destination": "/dashboard.html"
         },
         {
-            "src": "/schedule.html",
-            "dest": "/schedule.html"
+            "source": "/schedule.html",
+            "destination": "/schedule.html"
         },
         {
-            "src": "/index.html",
-            "dest": "/index.html"
+            "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
+            "destination": "/$1"
         },
         {
-            "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot))",
-            "dest": "/$1"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ],
     "headers": [
