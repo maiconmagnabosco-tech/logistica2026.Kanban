@@ -224,13 +224,26 @@ function saveCronograma(data) {
 
 /**
  * Formatar data para chave YYYY-MM-DD
+ * Trata números seriais do Google Sheets (dias desde 1900-01-01)
  */
 function formatDateKey(dateValue) {
     if (!dateValue) return '';
     
+    // Se já está no formato YYYY-MM-DD, retornar direto
+    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        return dateValue;
+    }
+    
     let date;
     if (dateValue instanceof Date) {
         date = dateValue;
+    } else if (typeof dateValue === 'number' || (typeof dateValue === 'string' && !isNaN(dateValue) && parseFloat(dateValue) > 0 && parseFloat(dateValue) < 100000)) {
+        // Número serial do Google Sheets (dias desde 1900-01-01)
+        // Google Sheets considera 1900 como bissexto (bug histórico), então usamos -1
+        const serial = typeof dateValue === 'string' ? parseFloat(dateValue) : dateValue;
+        // Converter para JavaScript Date: (serial - 1 - 25569) * 86400000
+        // 25569 = dias entre 1900-01-01 e 1970-01-01
+        date = new Date((serial - 1 - 25569) * 86400000);
     } else if (typeof dateValue === 'string') {
         // Tentar parsear string de data
         date = new Date(dateValue);
@@ -239,6 +252,7 @@ function formatDateKey(dateValue) {
     }
     
     if (isNaN(date.getTime())) {
+        console.warn('Não foi possível converter data:', dateValue);
         return String(dateValue);
     }
     

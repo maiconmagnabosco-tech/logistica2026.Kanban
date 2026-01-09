@@ -224,7 +224,59 @@ class ScheduleApp {
             if (data.status === 'success' && data.data) {
                 const meetings = data.data.meetings || {};
                 console.log('Carregando reuniões da API:', Object.keys(meetings).length, 'reuniões encontradas');
-                return meetings;
+                
+                // Validar e normalizar datas das reuniões
+                const normalizedMeetings = {};
+                Object.keys(meetings).forEach(dateKey => {
+                    const meeting = meetings[dateKey];
+                    let normalizedDateKey = dateKey;
+                    
+                    // Validar formato da data (deve ser YYYY-MM-DD)
+                    const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+                    
+                    if (!datePattern.test(dateKey)) {
+                        console.warn('Formato de data da reunião inválido, tentando corrigir:', dateKey);
+                        try {
+                            // Tentar converter número serial do Google Sheets
+                            if (typeof dateKey === 'number' || (!isNaN(dateKey) && parseFloat(dateKey) > 0 && parseFloat(dateKey) < 100000)) {
+                                // Número serial do Google Sheets
+                                const serial = typeof dateKey === 'string' ? parseFloat(dateKey) : dateKey;
+                                const date = new Date((serial - 1 - 25569) * 86400000);
+                                if (!isNaN(date.getTime())) {
+                                    normalizedDateKey = this.getDateKey(date);
+                                    console.log('Data convertida de serial:', dateKey, '->', normalizedDateKey);
+                                } else {
+                                    console.error('Não foi possível converter número serial:', dateKey);
+                                    return; // Pular esta reunião
+                                }
+                            } else {
+                                // Tentar parsear como string de data
+                                const date = new Date(dateKey);
+                                if (!isNaN(date.getTime())) {
+                                    normalizedDateKey = this.getDateKey(date);
+                                    console.log('Data convertida de string:', dateKey, '->', normalizedDateKey);
+                                } else {
+                                    console.error('Não foi possível converter data:', dateKey);
+                                    return; // Pular esta reunião
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Erro ao corrigir data da reunião:', e, dateKey);
+                            return; // Pular esta reunião
+                        }
+                    }
+                    
+                    // Salvar reunião com data normalizada
+                    normalizedMeetings[normalizedDateKey] = {
+                        date: normalizedDateKey,
+                        title: meeting.title || '',
+                        time: meeting.time || '',
+                        notes: meeting.notes || ''
+                    };
+                });
+                
+                console.log('Reuniões normalizadas:', Object.keys(normalizedMeetings).length);
+                return normalizedMeetings;
             } else {
                 console.warn('API não retornou success ou data:', data);
                 // Retornar objeto vazio se não tiver dados
@@ -1001,36 +1053,13 @@ class ScheduleApp {
             alertType = 'meeting';
         }
 
-        // Adicionar mensagem motivacional
-        const motivationalMessages = [
-            '💪 Vamos juntos alcançar nossos objetivos!',
-            '🚀 Hoje é um novo dia para fazer a diferença!',
-            '⭐ Equipe unida, resultados incríveis!',
-            '🎯 Foco e determinação são nossas forças!',
-            '🔥 Cada dia é uma nova oportunidade!',
-            '💼 Trabalho em equipe faz a diferença!',
-            '🌟 Juntos somos mais fortes!',
-            '🏆 Vamos superar todos os desafios!'
-        ];
-        const randomMotivational = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-
         if (alertMessage) {
             alertEl.innerHTML = `
                 <div class="today-alert-content">
                     <div class="today-alert-main">${alertMessage}</div>
-                    <div class="today-alert-motivational">${randomMotivational}</div>
                 </div>
             `;
             alertEl.className = `today-alert today-alert-${alertType}`;
-            alertEl.style.display = 'block';
-        } else {
-            // Mesmo sem evento específico, mostrar mensagem motivacional
-            alertEl.innerHTML = `
-                <div class="today-alert-content">
-                    <div class="today-alert-motivational">${randomMotivational}</div>
-                </div>
-            `;
-            alertEl.className = 'today-alert today-alert-motivational-only';
             alertEl.style.display = 'block';
         }
     }
