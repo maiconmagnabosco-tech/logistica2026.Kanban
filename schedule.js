@@ -1198,7 +1198,42 @@ class ScheduleApp {
         
         if (modal && dateInput && contentTextarea) {
             const meeting = this.meetings[dateKey];
-            const dateStr = new Date(date).toLocaleDateString('pt-BR', {
+            
+            // PRIORIDADE 1: Usar meeting.date se existir e for válido (é a fonte mais confiável)
+            // PRIORIDADE 2: Usar dateKey se for válido
+            // PRIORIDADE 3: Usar o objeto date passado
+            let dateObj;
+            let finalDateKey = dateKey;
+            
+            if (meeting && meeting.date && /^\d{4}-\d{2}-\d{2}$/.test(meeting.date)) {
+                // Usar a data salva na reunião (mais confiável)
+                finalDateKey = meeting.date;
+                const [year, month, day] = meeting.date.split('-').map(Number);
+                dateObj = new Date(year, month - 1, day);
+            } else if (dateKey && /^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+                // Usar dateKey se for válido
+                const [year, month, day] = dateKey.split('-').map(Number);
+                dateObj = new Date(year, month - 1, day);
+            } else {
+                // Fallback: usar o objeto date passado
+                dateObj = date instanceof Date ? date : new Date(date);
+                if (dateObj && !isNaN(dateObj.getTime())) {
+                    finalDateKey = this.getDateKey(dateObj);
+                }
+            }
+            
+            // Validar se a data é válida
+            if (isNaN(dateObj.getTime())) {
+                console.error('Data inválida ao abrir modal de anotações:', {
+                    dateKey,
+                    meeting,
+                    meetingDate: meeting?.date
+                });
+                dateObj = new Date(); // Usar data atual como fallback
+                finalDateKey = this.getDateKey(dateObj);
+            }
+            
+            const dateStr = dateObj.toLocaleDateString('pt-BR', {
                 weekday: 'long',
                 year: 'numeric',
                 month: 'long',
@@ -1208,8 +1243,8 @@ class ScheduleApp {
             dateInput.value = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
             contentTextarea.value = meeting ? (meeting.notes || '') : '';
             
-            this.selectedDate = date;
-            this.currentMeetingKey = dateKey;
+            this.selectedDate = dateObj;
+            this.currentMeetingKey = finalDateKey;
             modal.style.display = 'flex';
         }
     }
@@ -1230,7 +1265,27 @@ class ScheduleApp {
 
         if (!dateInput || !timeInput) return;
 
-        const dateKey = dateInput.value;
+        let dateKey = dateInput.value;
+        
+        // Garantir que dateKey está no formato YYYY-MM-DD
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+            // Tentar converter se não estiver no formato correto
+            try {
+                const date = new Date(dateKey);
+                if (!isNaN(date.getTime())) {
+                    dateKey = this.getDateKey(date);
+                } else {
+                    console.error('Data inválida ao salvar reunião:', dateInput.value);
+                    alert('Erro: Data inválida. Por favor, selecione uma data válida.');
+                    return;
+                }
+            } catch (e) {
+                console.error('Erro ao converter data ao salvar reunião:', e, dateInput.value);
+                alert('Erro: Não foi possível processar a data. Por favor, tente novamente.');
+                return;
+            }
+        }
+        
         const time = timeInput.value;
         const title = (titleInput && titleInput.value.trim()) ? titleInput.value.trim() : 'Reunião';
 
@@ -1238,10 +1293,13 @@ class ScheduleApp {
             this.meetings[dateKey] = {};
         }
 
+        // Garantir que a data está salva corretamente
         this.meetings[dateKey].date = dateKey;
         this.meetings[dateKey].time = time;
         this.meetings[dateKey].title = title;
         this.meetings[dateKey].notes = this.meetings[dateKey].notes || '';
+
+        console.log('Salvando reunião com data:', dateKey, this.meetings[dateKey]);
 
         await this.saveMeetings();
         this.closeMeetingModal();
