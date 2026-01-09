@@ -3,11 +3,11 @@ const AUTH_DOMAIN = '@transmagnabosco.com.br';
 
 // Lista de usuários permitidos, senhas e permissões
 const USER_PERMISSIONS = {
-    // Usuário fictício para visualização (torre de controle)
+    // Usuário geral
     'magnabosco': {
         name: 'Magnabosco',
-        password: '123456',
-        access: 'view_only' // Apenas visualização
+        password: '1234',
+        access: 'move_own' // Usuário geral: pode mover apenas seus próprios cards
     },
     'maicon.amaral@transmagnabosco.com.br': {
         name: 'Maicon',
