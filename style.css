@@ -8,6 +8,30 @@
     --font-family: 'Outfit', sans-serif;
 }
 
+/* Estilos globais para scrollbar - Preto igual ao layout */
+* {
+    scrollbar-width: thin; /* Firefox */
+    scrollbar-color: #000000 #000000; /* thumb track - ambos pretos */
+}
+
+*::-webkit-scrollbar {
+    width: 12px; /* Chrome, Edge, Safari */
+    height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+    background: #000000; /* Fundo preto */
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #000000; /* Preto igual ao layout */
+    border-radius: 6px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #0a0a0a; /* Preto muito escuro no hover */
+}
+
 body {
     margin: 0;
     padding: 0;
@@ -63,12 +87,12 @@ body {
 }
 
 .main-wrapper::-webkit-scrollbar-thumb {
-    background: #333;
+    background: #000000; /* Preto igual ao layout */
     border-radius: 6px;
 }
 
 .main-wrapper::-webkit-scrollbar-thumb:hover {
-    background: #444;
+    background: #0a0a0a; /* Preto muito escuro no hover */
 }
 
 /* Header & Dashboard */
@@ -719,16 +743,16 @@ button {
 }
 
 .sidebar-content::-webkit-scrollbar-track {
-    background: #1a1a1a;
+    background: #000000; /* Preto igual ao layout */
 }
 
 .sidebar-content::-webkit-scrollbar-thumb {
-    background: #444;
+    background: #000000; /* Preto igual ao layout */
     border-radius: 4px;
 }
 
 .sidebar-content::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #0a0a0a; /* Preto muito escuro no hover */
 }
 
 .sidebar-section {
