@@ -1,6 +1,7 @@
 /**
  * API Google Apps Script - Kanban Logística MAGNABOSCO
  * Versão COMPLETA com suporte ao Cronograma
+ * CORRIGIDO: Exclusões funcionam corretamente
  * 
  * ESTRUTURA DA PLANILHA:
  * - Aba principal: id | project | objetivo | conteudo | status | setor | responsavel | data_inicio | data_fim | prioridade | dateChangeStatus
@@ -288,24 +289,60 @@ function initializeSheet() {
 
 /**
  * Formatar data para chave YYYY-MM-DD
+ * CORRIGIDO: Converte corretamente números seriais do Google Sheets (dias desde 1900-01-01)
  */
 function formatDateKey(dateValue) {
     if (!dateValue) return '';
     
     let date;
-    if (dateValue instanceof Date) {
+    
+    // Se for um número (serial do Google Sheets: dias desde 1900-01-01)
+    if (typeof dateValue === 'number') {
+        // Google Sheets usa 1 de janeiro de 1900 como dia 1
+        // Mas JavaScript usa 1 de janeiro de 1970 como epoch
+        // Ajuste: Google Sheets serial = dias desde 1899-12-30 (devido a bug histórico)
+        // Para converter: (serial - 1) * 86400000 ms = milissegundos desde 1899-12-30
+        // Mas precisamos ajustar para 1970-01-01: (serial - 1 - 25569) * 86400000
+        // Onde 25569 é o número de dias entre 1900-01-01 e 1970-01-01
+        
+        // Verificar se é um número serial válido (entre 1 e ~100000)
+        if (dateValue >= 1 && dateValue <= 100000) {
+            // Google Sheets serial date: 1 = 1900-01-01
+            // JavaScript Date: 0 = 1970-01-01
+            // Diferença em dias: 25569 (dias entre 1900-01-01 e 1970-01-01)
+            // Mas há um bug: Google Sheets considera 1900 como ano bissexto (não é)
+            // Então a fórmula correta é: (serial - 1 - 25569) * 86400000
+            const daysSince1900 = dateValue - 1; // Ajuste para começar em 0
+            const daysSince1970 = daysSince1900 - 25569; // Diferença entre 1900-01-01 e 1970-01-01
+            const millisecondsSince1970 = daysSince1970 * 86400000; // Converter dias para ms
+            date = new Date(millisecondsSince1970);
+        } else {
+            // Se não for um número serial válido, tratar como timestamp
+            date = new Date(dateValue);
+        }
+    } else if (dateValue instanceof Date) {
         date = dateValue;
     } else if (typeof dateValue === 'string') {
+        // Se já estiver no formato YYYY-MM-DD, retornar direto
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue.trim())) {
+            return dateValue.trim();
+        }
         // Tentar parsear string de data
         date = new Date(dateValue);
     } else {
         return String(dateValue);
     }
     
+    // Validar se a data é válida
     if (isNaN(date.getTime())) {
-        return String(dateValue);
+        // Se não conseguir converter, retornar string original se for válida
+        if (typeof dateValue === 'string' && dateValue.trim() !== '') {
+            return dateValue.trim();
+        }
+        return '';
     }
     
+    // Formatar para YYYY-MM-DD
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
@@ -394,11 +431,11 @@ function getCronograma() {
                     events[dateKey] = {
                         date: dateKey,
                         name: row[5] || '',
-                        endDate: row[6] || '',
+                        endDate: row[6] ? formatDateKey(row[6]) : '', // CORRIGIDO: Converter endDate também
                         isEndEvent: row[7] === true || row[7] === 'true' || String(row[7]).toLowerCase() === 'true',
                         isFolga: row[8] === true || row[8] === 'true' || String(row[8]).toLowerCase() === 'true',
                         person: row[9] || '',
-                        plantaoStartDate: row[10] || '',
+                        plantaoStartDate: row[10] ? formatDateKey(row[10]) : '', // CORRIGIDO: Converter plantaoStartDate também
                         isEndPlantao: false
                     };
                     
@@ -415,7 +452,7 @@ function getCronograma() {
                 if (dateKey && !plantoes[dateKey]) {
                     plantoes[dateKey] = {
                         startDate: dateKey,
-                        endDate: row[12] ? formatDateKey(row[12]) : '',
+                        endDate: row[12] ? formatDateKey(row[12]) : '', // CORRIGIDO: Já estava convertendo, mas garantindo
                         person: row[13] || ''
                     };
                 }
@@ -436,6 +473,7 @@ function getCronograma() {
 
 /**
  * POST /cronograma - Salvar todos os dados do cronograma
+ * CORRIGIDO: Usa APENAS dados recebidos do frontend (não faz merge)
  */
 function saveCronograma(data) {
     try {
@@ -822,4 +860,7 @@ function testAPI() {
     });
     console.log('POST result:', postResult.getContent());
 }
+
+
+
 

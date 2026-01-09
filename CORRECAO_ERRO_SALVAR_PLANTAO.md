@@ -113,3 +113,7 @@ Se você estiver testando localmente (file://), pode haver restrições de CORS.
 **Data da Correção:** 03/02/2025  
 **Status:** ✅ Corrigido e testado
 
+
+
+
+

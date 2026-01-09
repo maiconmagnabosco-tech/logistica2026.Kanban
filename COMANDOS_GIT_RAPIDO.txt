@@ -1,0 +1,74 @@
+# 🚀 Comandos Git Rápidos - Deploy GitHub + Vercel
+
+## 📍 Passo 1: Ir para a pasta do projeto
+
+cd "C:\Users\maicon John\Logistica 2026"
+
+## 📦 Passo 2: Inicializar Git (se ainda não foi feito)
+
+git init
+
+## ➕ Passo 3: Adicionar todos os arquivos
+
+git add .
+
+## 💾 Passo 4: Fazer commit
+
+git commit -m "Versão inicial - Sistema Kanban Logística MAGNABOSCO"
+
+## 🔗 Passo 5: Conectar ao repositório GitHub
+
+git remote add origin https://github.com/SEU_USUARIO/kanban-logistica-magnabosco.git
+
+⚠️ SUBSTITUA "SEU_USUARIO" pelo seu usuário do GitHub!
+
+## 🌿 Passo 6: Renomear branch para main
+
+git branch -M main
+
+## 📤 Passo 7: Enviar para GitHub
+
+git push -u origin main
+
+---
+
+## 🔄 Para Atualizações Futuras:
+
+git add .
+git commit -m "Descrição das mudanças"
+git push
+
+---
+
+## 📝 Exemplo Completo:
+
+cd "C:\Users\maicon John\Logistica 2026"
+git init
+git add .
+git commit -m "Versão inicial - Sistema Kanban Logística MAGNABOSCO"
+git remote add origin https://github.com/SEU_USUARIO/kanban-logistica-magnabosco.git
+git branch -M main
+git push -u origin main
+
+---
+
+## ⚠️ Se Pedir Login:
+
+1. Use suas credenciais do GitHub
+2. OU crie um token de acesso pessoal:
+   - GitHub → Settings → Developer settings → Personal access tokens
+   - Generate new token
+   - Use o token como senha
+
+---
+
+## ✅ Depois de enviar para GitHub:
+
+1. Acesse: https://vercel.com
+2. Import → Escolha seu repositório
+3. Deploy → Pronto!
+
+
+
+
+

@@ -110,3 +110,7 @@ O arquivo `.gitignore` já está configurado para ignorar arquivos sensíveis.
 
 **Você está pronto para fazer push para o GitHub assim que criar o repositório!**
 
+
+
+
+

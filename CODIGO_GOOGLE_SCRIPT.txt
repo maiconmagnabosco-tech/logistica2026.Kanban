@@ -1,10 +1,9 @@
 /**
  * API Google Apps Script - Kanban Logística MAGNABOSCO
- * Versão COMPLETA com suporte ao Cronograma
+ * Versão melhorada com segurança e logs
  * 
  * ESTRUTURA DA PLANILHA:
- * - Aba principal: id | project | objetivo | conteudo | status | setor | responsavel | data_inicio | data_fim | prioridade | dateChangeStatus
- * - Aba "Cronograma": Reuniões (cols 1-4) | Eventos (cols 5-11) | Plantões (cols 12-14)
+ * Colunas: id | project | objetivo | conteudo | status | setor | responsavel | data_inicio | data_fim | prioridade | dateChangeStatus
  */
 
 // ============================================================================
@@ -12,16 +11,13 @@
 // ============================================================================
 
 // Origens permitidas (domínios que podem acessar a API)
-// IMPORTANTE: Para acesso público de qualquer origem, deixe vazio ou use '*'
-// O Google Apps Script gerencia CORS automaticamente quando configurado como público
+// IMPORTANTE: Atualize com a URL do seu deploy (ex: https://seu-projeto.vercel.app)
 const ALLOWED_ORIGINS = [
-    '*',  // Permite acesso de qualquer origem (público)
-    'https://kanban-logistica-magnabosco.vercel.app',
-    'https://*.vercel.app',
-    'https://*.netlify.app',
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://localhost:*',  // Qualquer porta local
+    'https://kanban-logistica-magnabosco.vercel.app',  // ← ATUALIZE AQUI
+    'https://*.vercel.app',                             // Qualquer subdomínio Vercel
+    'https://*.netlify.app',                            // Qualquer subdomínio Netlify
+    'http://localhost:8000',                            // Desenvolvimento local
+    'http://127.0.0.1:8000',                           // Desenvolvimento local alternativo
 ];
 
 // Limites de segurança
@@ -84,20 +80,14 @@ function createSuccessResponse(data, message = 'Success') {
 
 /**
  * Validar origem da requisição (básico)
- * Nota: Google Apps Script gerencia CORS automaticamente quando público
- * Esta função é apenas para logging, não bloqueia requisições
+ * Nota: Google Apps Script tem limitações para validação de origem HTTP
  */
 function isValidOrigin(origin) {
-    // Se '*' está nas origens permitidas, sempre permitir
-    if (ALLOWED_ORIGINS.includes('*')) {
-        return true;
-    }
-    
     if (!origin) return true; // Se não tiver origem, permitir (para compatibilidade)
     
     return ALLOWED_ORIGINS.some(allowed => {
         if (allowed.includes('*')) {
-            const pattern = allowed.replace(/\*/g, '.*');
+            const pattern = allowed.replace('*', '.*');
             const regex = new RegExp('^' + pattern);
             return regex.test(origin);
         }
@@ -283,273 +273,11 @@ function initializeSheet() {
 }
 
 // ============================================================================
-// FUNÇÕES DE CRONOGRAMA
-// ============================================================================
-
-/**
- * Formatar data para chave YYYY-MM-DD
- */
-function formatDateKey(dateValue) {
-    if (!dateValue) return '';
-    
-    let date;
-    if (dateValue instanceof Date) {
-        date = dateValue;
-    } else if (typeof dateValue === 'string') {
-        // Tentar parsear string de data
-        date = new Date(dateValue);
-    } else {
-        return String(dateValue);
-    }
-    
-    if (isNaN(date.getTime())) {
-        return String(dateValue);
-    }
-    
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-/**
- * Obter ou criar aba "Cronograma" na planilha
- */
-function getCronogramaSheet() {
-    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = spreadsheet.getSheetByName('Cronograma');
-    
-    if (!sheet) {
-        // Criar nova aba
-        sheet = spreadsheet.insertSheet('Cronograma');
-        
-        // Criar cabeçalhos para Reuniões (linha 1, colunas 1-4)
-        sheet.getRange(1, 1, 1, 4).setValues([['data', 'titulo', 'hora', 'anotacoes']]);
-        sheet.getRange(1, 1, 1, 4).setFontWeight('bold');
-        sheet.getRange(1, 1, 1, 4).setBackground('#4285f4');
-        sheet.getRange(1, 1, 1, 4).setFontColor('#ffffff');
-        
-        // Criar cabeçalhos para Eventos (linha 1, colunas 5-11)
-        sheet.getRange(1, 5, 1, 7).setValues([['data', 'nome', 'data_fim', 'is_end_event', 'is_folga', 'person', 'plantao_start_date']]);
-        sheet.getRange(1, 5, 1, 7).setFontWeight('bold');
-        sheet.getRange(1, 5, 1, 7).setBackground('#34a853');
-        sheet.getRange(1, 5, 1, 7).setFontColor('#ffffff');
-        
-        // Criar cabeçalhos para Plantões (linha 1, colunas 12-14)
-        sheet.getRange(1, 12, 1, 3).setValues([['data_inicio', 'data_fim', 'person']]);
-        sheet.getRange(1, 12, 1, 3).setFontWeight('bold');
-        sheet.getRange(1, 12, 1, 3).setBackground('#ea4335');
-        sheet.getRange(1, 12, 1, 3).setFontColor('#ffffff');
-        
-        sheet.setFrozenRows(1);
-    }
-    
-    return sheet;
-}
-
-/**
- * GET /cronograma - Buscar todos os dados do cronograma
- */
-function getCronograma() {
-    try {
-        const sheet = getCronogramaSheet();
-        const allData = sheet.getDataRange().getValues();
-        
-        // Se não houver dados (apenas cabeçalho)
-        if (allData.length <= 1) {
-            return {
-                meetings: {},
-                events: {},
-                plantoes: {}
-            };
-        }
-        
-        // Remover cabeçalho
-        const dataRows = allData.slice(1);
-        
-        const meetings = {};
-        const events = {};
-        const plantoes = {};
-        
-        // Processar linhas
-        dataRows.forEach((row, index) => {
-            // Reuniões (colunas 0-3, índice 0-3)
-            if (row[0] && row[0] !== '') { // Se tem data
-                const dateKey = formatDateKey(row[0]);
-                if (dateKey && !meetings[dateKey]) {
-                    meetings[dateKey] = {
-                        date: dateKey,
-                        title: row[1] || '',
-                        time: row[2] || '',
-                        notes: row[3] || ''
-                    };
-                }
-            }
-            
-            // Eventos (colunas 4-10, índice 4-10)
-            if (row[4] && row[4] !== '') { // Se tem data
-                const dateKey = formatDateKey(row[4]);
-                if (dateKey) {
-                    // Sempre atualizar se já existe ou criar novo
-                    events[dateKey] = {
-                        date: dateKey,
-                        name: row[5] || '',
-                        endDate: row[6] || '',
-                        isEndEvent: row[7] === true || row[7] === 'true' || String(row[7]).toLowerCase() === 'true',
-                        isFolga: row[8] === true || row[8] === 'true' || String(row[8]).toLowerCase() === 'true',
-                        person: row[9] || '',
-                        plantaoStartDate: row[10] || '',
-                        isEndPlantao: false
-                    };
-                    
-                    // Verificar se é fim de plantão pelo nome
-                    if (events[dateKey].name && events[dateKey].name.includes('Fim do Plantão')) {
-                        events[dateKey].isEndPlantao = true;
-                    }
-                }
-            }
-            
-            // Plantões (colunas 11-13, índice 11-13)
-            if (row[11] && row[11] !== '') { // Se tem data_inicio
-                const dateKey = formatDateKey(row[11]);
-                if (dateKey && !plantoes[dateKey]) {
-                    plantoes[dateKey] = {
-                        startDate: dateKey,
-                        endDate: row[12] ? formatDateKey(row[12]) : '',
-                        person: row[13] || ''
-                    };
-                }
-            }
-        });
-        
-        return {
-            meetings: meetings,
-            events: events,
-            plantoes: plantoes
-        };
-        
-    } catch (err) {
-        console.error('Erro ao buscar cronograma:', err);
-        throw err;
-    }
-}
-
-/**
- * POST /cronograma - Salvar todos os dados do cronograma
- */
-function saveCronograma(data) {
-    try {
-        const sheet = getCronogramaSheet();
-        
-        // IMPORTANTE: Usar APENAS os dados recebidos do frontend
-        // Não fazer merge com dados antigos - isso garante que exclusões sejam salvas corretamente
-        // O frontend já envia todos os dados atualizados (incluindo exclusões)
-        const meetings = data.meetings || {};
-        const events = data.events || {};
-        const plantoes = data.plantoes || {};
-        
-        // Log para debug
-        console.log('Salvando cronograma (apenas dados recebidos):', {
-            meetings: Object.keys(meetings).length,
-            events: Object.keys(events).length,
-            plantoes: Object.keys(plantoes).length,
-            dadosRecebidos: {
-                meetings: data.meetings ? Object.keys(data.meetings).length : 0,
-                events: data.events ? Object.keys(data.events).length : 0,
-                plantoes: data.plantoes ? Object.keys(data.plantoes).length : 0
-            }
-        });
-        
-        // Limpar dados antigos (exceto cabeçalho) apenas para reescrever tudo
-        const lastRow = sheet.getLastRow();
-        if (lastRow > 1) {
-            sheet.deleteRows(2, lastRow - 1);
-        }
-        
-        const allRows = [];
-        
-        // Processar reuniões
-        Object.keys(meetings).forEach(dateKey => {
-            const meeting = meetings[dateKey];
-            const row = [
-                dateKey, // data (col 1)
-                meeting.title || '', // titulo (col 2)
-                meeting.time || '', // hora (col 3)
-                meeting.notes || '' // anotacoes (col 4)
-            ];
-            // Preencher colunas de eventos e plantões com vazio (cols 5-14)
-            for (let i = 0; i < 10; i++) {
-                row.push('');
-            }
-            allRows.push(row);
-        });
-        
-        // Processar eventos
-        Object.keys(events).forEach(dateKey => {
-            const event = events[dateKey];
-            const row = [];
-            // Colunas vazias para reuniões (4 colunas)
-            for (let i = 0; i < 4; i++) {
-                row.push('');
-            }
-            // Dados do evento (cols 5-11)
-            row.push(
-                dateKey, // data (col 5)
-                event.name || '', // nome (col 6)
-                event.endDate || '', // data_fim (col 7)
-                event.isEndEvent || false, // is_end_event (col 8)
-                event.isFolga || false, // is_folga (col 9)
-                event.person || '', // person (col 10)
-                event.plantaoStartDate || '' // plantao_start_date (col 11)
-            );
-            // Colunas vazias para plantões (3 colunas, cols 12-14)
-            for (let i = 0; i < 3; i++) {
-                row.push('');
-            }
-            allRows.push(row);
-        });
-        
-        // Processar plantões
-        Object.keys(plantoes).forEach(dateKey => {
-            const plantao = plantoes[dateKey];
-            const row = [];
-            // Colunas vazias para reuniões (4 colunas)
-            for (let i = 0; i < 4; i++) {
-                row.push('');
-            }
-            // Colunas vazias para eventos (7 colunas)
-            for (let i = 0; i < 7; i++) {
-                row.push('');
-            }
-            // Dados do plantão (cols 12-14)
-            row.push(
-                dateKey, // data_inicio (col 12)
-                plantao.endDate || '', // data_fim (col 13)
-                plantao.person || '' // person (col 14)
-            );
-            allRows.push(row);
-        });
-        
-        // Escrever dados na planilha
-        if (allRows.length > 0) {
-            sheet.getRange(2, 1, allRows.length, 14).setValues(allRows);
-            SpreadsheetApp.flush(); // Forçar salvamento
-        }
-        
-        return { success: true, message: 'Cronograma salvo com sucesso' };
-        
-    } catch (err) {
-        console.error('Erro ao salvar cronograma:', err);
-        throw err;
-    }
-}
-
-// ============================================================================
 // ENDPOINTS DA API
 // ============================================================================
 
 /**
- * GET - Buscar todas as tarefas OU cronograma
+ * GET - Buscar todas as tarefas
  */
 function doGet(e) {
     const startTime = Date.now();
@@ -563,23 +291,6 @@ function doGet(e) {
             return createErrorResponse(error, 429);
         }
         
-        // Verificar se é requisição de cronograma
-        const action = e.parameter ? e.parameter.action : null;
-        
-        if (action === 'cronograma') {
-            try {
-                const cronograma = getCronograma();
-                logAccess('GET cronograma', 'GET', true);
-                return createSuccessResponse(cronograma, 'Cronograma retrieved successfully');
-            } catch (err) {
-                error = 'Erro ao buscar cronograma: ' + err.toString();
-                console.error(error);
-                logAccess('GET cronograma', 'GET', false, error);
-                return createErrorResponse(error, 500);
-            }
-        }
-        
-        // Código existente para buscar tarefas
         // Inicializar planilha se necessário
         initializeSheet();
         
@@ -636,7 +347,7 @@ function doGet(e) {
 }
 
 /**
- * POST - Salvar tarefas OU cronograma
+ * POST - Salvar tarefas (substitui todas)
  */
 function doPost(e) {
     const startTime = Date.now();
@@ -675,29 +386,6 @@ function doPost(e) {
             return createErrorResponse(error, 400);
         }
         
-        // Verificar se é requisição de cronograma
-        const action = data.action;
-        
-        if (action === 'cronograma') {
-            try {
-                if (!data.data) {
-                    error = 'Data field is required for cronograma';
-                    logAccess('POST cronograma', 'POST', false, error);
-                    return createErrorResponse(error, 400);
-                }
-                
-                const result = saveCronograma(data.data);
-                logAccess('POST cronograma', 'POST', true);
-                return createSuccessResponse(result, 'Cronograma salvo com sucesso');
-            } catch (err) {
-                error = 'Erro ao salvar cronograma: ' + err.toString();
-                console.error(error);
-                logAccess('POST cronograma', 'POST', false, error);
-                return createErrorResponse(error, 500);
-            }
-        }
-        
-        // Código existente para salvar tarefas
         // Validar estrutura
         if (!data || !Array.isArray(data.tasks)) {
             error = 'Invalid data structure: tasks array is required';
@@ -822,4 +510,13 @@ function testAPI() {
     });
     console.log('POST result:', postResult.getContent());
 }
+
+
+
+
+
+
+
+
+
 

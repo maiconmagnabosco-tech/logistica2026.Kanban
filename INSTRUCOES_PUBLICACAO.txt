@@ -1,0 +1,88 @@
+═══════════════════════════════════════════════════════════════
+  GUIA RÁPIDO PARA PUBLICAR O PROJETO ONLINE
+═══════════════════════════════════════════════════════════════
+
+📋 PRÉ-REQUISITOS:
+- Conta no GitHub (gratuita): https://github.com
+- Conta no Vercel (gratuita): https://vercel.com
+
+═══════════════════════════════════════════════════════════════
+  OPÇÃO 1: USANDO O ARQUIVO PUBLICAR.bat (MAIS FÁCIL)
+═══════════════════════════════════════════════════════════════
+
+1. Dê dois cliques no arquivo PUBLICAR.bat
+   (Ele preparará o projeto automaticamente)
+
+2. Siga as instruções que aparecerão na tela
+
+═══════════════════════════════════════════════════════════════
+  OPÇÃO 2: PASSO A PASSO MANUAL
+═══════════════════════════════════════════════════════════════
+
+PASSO 1: Criar Repositório no GitHub
+───────────────────────────────────────
+1. Acesse: https://github.com
+2. Faça login
+3. Clique no botão "+" (canto superior direito)
+4. Selecione "New repository"
+5. Preencha:
+   - Nome: kanban-logistica-magnabosco
+   - Descrição: Sistema Kanban para Logística
+   - Público ou Privado (você escolhe)
+   - NÃO marque "Initialize with README"
+6. Clique em "Create repository"
+
+PASSO 2: Conectar ao GitHub
+───────────────────────────────────────
+Abra o PowerShell ou Terminal nesta pasta e execute:
+
+   git remote add origin https://github.com/SEU-USUARIO/kanban-logistica-magnabosco.git
+   git branch -M main
+   git push -u origin main
+
+(Substitua SEU-USUARIO pelo seu usuário do GitHub)
+
+PASSO 3: Publicar no Vercel
+───────────────────────────────────────
+1. Acesse: https://vercel.com
+2. Faça login (pode usar sua conta do GitHub)
+3. Clique em "Add New Project" ou "Import Project"
+4. Selecione o repositório: kanban-logistica-magnabosco
+5. Configure:
+   - Framework: Other
+   - Build Command: (deixe em branco)
+   - Output Directory: . (deixe em branco)
+6. Clique em "Deploy"
+
+PRONTO! Seu projeto estará online em poucos minutos! 🎉
+
+═══════════════════════════════════════════════════════════════
+  INFORMAÇÕES IMPORTANTES
+═══════════════════════════════════════════════════════════════
+
+✅ Login de Teste:
+   Email: maicon.amaral@transmagnabosco.com.br
+   Senha: magna25
+
+✅ URL do Projeto:
+   O Vercel fornecerá uma URL como:
+   https://kanban-logistica-magnabosco.vercel.app
+
+✅ Para Atualizar:
+   Faça as alterações nos arquivos, depois execute:
+   git add .
+   git commit -m "Descrição das mudanças"
+   git push
+   (O Vercel atualizará automaticamente!)
+
+═══════════════════════════════════════════════════════════════
+
+Para instruções detalhadas, consulte o arquivo DEPLOY.md
+
+
+
+
+
+
+
+

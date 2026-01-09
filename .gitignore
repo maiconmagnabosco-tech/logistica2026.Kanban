@@ -1,41 +1,40 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Arquivos sensíveis e configurações
+CONFIG_API_KEY_SEGURA.txt
+*.key
+*.pem
+*.p12
+.env
+.env.local
 
-# OS
+# Arquivos temporários e backups
+*.bat
+*.zip
+*.tmp
+*.log
+console-script.txt
+COMO_CORRIGIR_AGORA.txt
+TESTAR_E_CORRIGIR.txt
+BACKUP_MELHORIAS.txt
+
+# Pastas de backup
+v2/
+ProjetoFinalKanban/
+backup/
+
+# Sistema
 .DS_Store
 Thumbs.db
-
-# IDE
-.vscode/
-.idea/
 *.swp
 *.swo
 *~
 
-# Node
+# IDEs
+.vscode/
+.idea/
+*.sublime-*
+
+# Node (se houver)
 node_modules/
-package-lock.json
-
-# Build
-dist/
-build/
-
-# Environment
-.env
-.env.local
-
-# Temporary files
-*.tmp
-*.temp
-
-
-
-
-
-
-
-
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

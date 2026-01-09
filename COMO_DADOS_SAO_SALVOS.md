@@ -241,3 +241,7 @@ https://script.google.com/macros/s/AKfycbzups-xiV57iFmlV1OYzi3Fp6_qOtZ3DOl1sJPp3
 **Base de Dados:** Google Sheets  
 **Acesso:** Via Google Apps Script API
 
+
+
+
+

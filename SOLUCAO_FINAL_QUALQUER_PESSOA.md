@@ -159,3 +159,7 @@ Deve retornar JSON válido.
 **Data:** 03/02/2025  
 **Status:** ✅ Corrigido para funcionar com "Qualquer pessoa"
 
+
+
+
+

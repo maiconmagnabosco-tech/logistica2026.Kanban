@@ -81,3 +81,7 @@ Adicionados logs detalhados para facilitar o debug:
   - Função `saveEvents()`: Substituição completa em vez de merge
   - Função `savePlantoes()`: Substituição completa em vez de merge
 
+
+
+
+

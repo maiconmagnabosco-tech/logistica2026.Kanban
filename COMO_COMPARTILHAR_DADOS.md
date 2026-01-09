@@ -132,3 +132,7 @@ Se quiser que atualize automaticamente sem recarregar:
 
 **Status:** ✅ Funcionando corretamente!
 
+
+
+
+

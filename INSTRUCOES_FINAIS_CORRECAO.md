@@ -189,3 +189,7 @@ Envie:
 **Data:** 03/02/2025  
 **Status:** URLs atualizadas - Aguardando verificação da configuração do Google Apps Script
 
+
+
+
+

@@ -259,3 +259,7 @@ O sistema usa autenticação local (localStorage). Isso significa:
 **Tempo estimado:** 5-10 minutos  
 **Dificuldade:** ⭐ Muito Fácil
 
+
+
+
+
